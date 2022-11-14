@@ -5,7 +5,7 @@
 -- Dumped from database version 13.3
 -- Dumped by pg_dump version 13.3
 
--- Started on 2022-11-02 03:00:21
+-- Started on 2022-11-14 23:29:40
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -87,6 +87,23 @@ Ja	Morant	10	organizator igre	12119440	1998-10-08	191	79	2	2019	Memphis Grizzlie
 COPY public."Roditelj" (ime, prezime, d_id) FROM stdin;
 Mark	Leonard	1
 Kim	Leonard	1
+Anthony	McClelland	2
+Gloria	James	2
+Anthony	Davis	3
+Erainer	Davis	3
+Dell	Curry	4
+Sonya	Curry	4
+Mychal	Thompson	5
+Julie	Thompson	5
+Branislav	Jokić	6
+Zlata	Jokić	6
+Mario	Bogdanović	7
+Saša	Dončić	8
+Mirjam	Poterbin	8
+Justin	Tatum	9
+Brandy	Cole	9
+Tee	Morant	10
+Jamie	Morant	10
 \.
 
 
@@ -108,7 +125,7 @@ ALTER TABLE ONLY public."Roditelj"
     ADD CONSTRAINT "Roditelj_pkey" PRIMARY KEY (ime, prezime);
 
 
--- Completed on 2022-11-02 03:00:21
+-- Completed on 2022-11-14 23:29:41
 
 --
 -- PostgreSQL database dump complete

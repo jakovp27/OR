@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+   <link href="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+   <link href="//cdn.datatables.net/buttons/1.5.6/css/buttons.bootstrap4.min.css" rel="stylesheet">
+   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.css">
+
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+      crossorigin="anonymous"></script>
+
+   <script type="text/javascript" charset="utf8"
+      src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.js"></script>
+   <script src="//cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+   <script src="//cdn.datatables.net/buttons/1.5.6/js/dataTables.buttons.min.js"></script>
+   <script src="//cdn.datatables.net/buttons/1.5.6/js/buttons.bootstrap4.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+   <script src="//cdn.datatables.net/buttons/1.5.6/js/buttons.html5.min.js"></script>
+   <script src="//cdn.datatables.net/buttons/1.5.6/js/buttons.print.min.js"></script>
+   <script src="//cdn.datatables.net/buttons/1.5.6/js/buttons.colVis.min.js"></script>
+   <meta charset="UTF-8">
+   <title>Košarkaši</title>
+   <meta charset="utf-8" />
+   <meta name="author" content="Jakov Prister">
+   <meta name="description" content="U sklopu 2 laboratorijske vježbe omogućen je dohvat svih podataka u CSV i JSON obliku kao i obrazac za filtriranje, prikaz filtriranih podataka te poveznice za preuzimanje filtriranog
+    skupa podataka (aktualni prikaz filtera), također u oblicima CSV i JSON.">
+   <meta name="keywords"
+      content="HTML, JavaScript, TypeScript, JSON, JSON Schema, CSV, Košarkaši, OR, Otvoreni podaci, DataTable, Database">
+</head>
+<body>
+   <table id="igrac" class="display">
+      <thead>
+         <tr>
+            <th>Ime</th>
+            <th>Prezime</th>
+            <th>Pozicija</th>
+            <th>Plaća</th>
+            <th>Datum rođenja</th>
+            <th>Visina</th>
+            <th>Težina</th>
+            <th>Draft pick</th>
+            <th>Godina drafta</th>
+            <th>Tim</th>
+            <th>Ime roditelja</th>
+            <th>Prezime roditelja</th>
+
+         </tr>
+      </thead>
+      <tfoot>
+         <tr>
+            <th>Ime</th>
+            <th>Prezime</th>
+            <th>Pozicija</th>
+            <th>Plaća</th>
+            <th>Datum rođenja</th>
+            <th>Visina</th>
+            <th>Težina</th>
+            <th>Draft pick</th>
+            <th>Godina drafta</th>
+            <th>Tim</th>
+            <th>Ime roditelja</th>
+            <th>Prezime roditelja</th>
+
+         </tr>
+      </tfoot>
+
+   </table>
+
+   <br>
+   <h3>Povratak na <a href="http://localhost:80">početnu</a> stranicu</h3>
+</body>
+
+</html>
+
+<script>
+
+   $('#igrac').DataTable({
+      dom: 'Bfrtip',
+      buttons: [
+         {
+            text: 'JSON',
+            action: function (e, dt, button, config) {
+               var data = dt.buttons.exportData();
+
+               $.fn.dataTable.fileSave(
+                  new Blob([JSON.stringify(data)]),
+                  'Export.json'
+               );
+            }
+         }, 'copy', 'csv', 'excel', 'pdf', 'print'
+      ],
+      ajax: {
+         url: '/get_data',
+         dataSrc: 'igrac'
+      },
+      columns: [
+         { data: 'ime' },
+         { data: 'prezime' },
+         { data: 'pozicija' },
+         { data: 'placa' },
+         { data: 'datum_rodenja' },
+         { data: 'visina' },
+         { data: 'tezina' },
+         { data: 'pick_na_draftu' },
+         { data: 'godina_drafta' },
+         { data: 'naziv_kluba' },
+         { data: 'roditelji[, ].ime' },
+         { data: 'roditelji[, ].prezime' }
+      ], initComplete: function () {
+         // Apply the search
+         this.api()
+            .columns()
+            .every(function () {
+               var that = this;
+               $('input', this.footer()).on('keyup change clear', function () {
+                  if (that.search() !== this.value) {
+                     that.search(this.value).draw();
+                  }
+               });
+            });
+      },
+   });
+
+
+   $('#igrac tfoot th').each(function () {
+      var title = $(this).text();
+      $(this).html('<input type="text" placeholder="Search ' + title + '" />');
+   });
+
+
+
+
+
+
+
+</script>
