@@ -1,4 +1,4 @@
-## 2. laboratorijska vježba - Izrada otvorenog skupa podataka
+## 2. laboratorijska vježba - Izrada aplikacije za prikaz otvorenog skupa podataka
 U repozitoriju se nalaze otvoreni podaci o profesionalnim košarkašima.
 <br />
 Nalaze se podaci o košarkašima u <strong>CSV</strong> i <strong>JSON</strong> formatu, kao i baza podataka u koju su unijeti ti podaci.
