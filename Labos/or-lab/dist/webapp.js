@@ -44,6 +44,8 @@ var path_1 = __importDefault(require("path"));
 var db = require("./or");
 var body_parser_1 = __importDefault(require("body-parser"));
 var fs = require('fs');
+var https_1 = __importDefault(require("https"));
+var express_openid_connect_1 = require("express-openid-connect");
 var app = (0, express_1["default"])();
 app.set("views", path_1["default"].join(__dirname, "views"));
 app.set('view engine', 'html');
@@ -52,18 +54,83 @@ app.use(express_1["default"].static(path_1["default"].join(__dirname, 'public'))
 var urlencodedParser = body_parser_1["default"].urlencoded({ extended: true });
 app.use(urlencodedParser);
 app.use(body_parser_1["default"].json());
-app.get('/', function (req, res) {
+var config = {
+    authRequired: false,
+    idpLogout: false,
+    secret: process.env.SECRET,
+    baseURL: "https://localhost:80",
+    clientID: process.env.CLIENT_ID,
+    issuerBaseURL: process.env.DOMAIN,
+    clientSecret: process.env.CLIENT_SECRET,
+    authorizationParams: {
+        response_type: 'code'
+    }
+};
+// auth router attaches /login, /logout, and /callback routes to the baseURL
+app.use((0, express_openid_connect_1.auth)(config));
+app.get("/sign-up", function (req, res) {
+    res.oidc.login({
+        returnTo: '/',
+        authorizationParams: {
+            screen_hint: "signup"
+        }
+    });
+});
+app.get("/log-in", function (req, res) {
+    res.oidc.login({
+        returnTo: '/',
+        authorizationParams: {
+            screen_hint: "login"
+        }
+    });
+});
+app.get('/userdata', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var rez;
+        return __generator(this, function (_a) {
+            if (req.oidc.isAuthenticated())
+                res.render('userdata', { user: req.oidc.user });
+            else
+                res.status(401).json({ status: "Not authenticated", message: "You must login tu access this page", response: null });
+            return [2 /*return*/];
+        });
+    });
+});
+app.get('/preslike', function (req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var rez, data, csv;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, db.getPlayers()];
+                case 0:
+                    if (!req.oidc.isAuthenticated()) return [3 /*break*/, 3];
+                    return [4 /*yield*/, db.getPlayers()];
                 case 1:
                     rez = _a.sent();
-                    console.log(rez);
-                    res.render('index', {});
-                    return [2 /*return*/];
+                    data = JSON.stringify(rez.igrac, null, 2);
+                    return [4 /*yield*/, db.getPlayersToCSV()];
+                case 2:
+                    csv = _a.sent();
+                    fs.writeFileSync('preslika_igraca.json', data);
+                    res.status(200).json({ status: "OK", message: "Uspješna promijena preslike", response: rez.igrac });
+                    return [3 /*break*/, 4];
+                case 3:
+                    res.status(401).json({ status: "Not authenticated", message: "You must login tu access this page", response: null });
+                    _a.label = 4;
+                case 4: return [2 /*return*/];
             }
+        });
+    });
+});
+app.get('/', function (req, res) {
+    var _a, _b, _c;
+    return __awaiter(this, void 0, void 0, function () {
+        var username, user;
+        return __generator(this, function (_d) {
+            if (req.oidc.isAuthenticated()) {
+                username = (_b = (_a = req.oidc.user) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : (_c = req.oidc.user) === null || _c === void 0 ? void 0 : _c.sub;
+                user = JSON.stringify(req.oidc.user);
+            }
+            res.render('index', { username: username });
+            return [2 /*return*/];
         });
     });
 });
@@ -338,9 +405,18 @@ app.get('/get_data', function (req, res) {
 app.get('/getDatatable', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            res.render('datatable', {});
+            if (req.oidc.isAuthenticated())
+                res.render('datatable', {});
+            else
+                res.status(401).json({ status: "Not authenticated", message: "You must login tu access this page", response: null });
             return [2 /*return*/];
         });
     });
 });
-app.listen(80);
+https_1["default"].createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+}, app)
+    .listen(80, function () {
+    console.log("Server running at https://localhost:80/");
+});

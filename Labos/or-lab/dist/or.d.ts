@@ -1,4 +1,5 @@
 export declare function getPlayers(): Promise<any>;
+export declare function getPlayersToCSV(): Promise<void>;
 export declare function getParents(): Promise<import("pg").QueryResult<any>>;
 export declare function getPlayerById(id: string): Promise<any>;
 export declare function getPlayerByName(name: string): Promise<any>;

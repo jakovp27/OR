@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -35,13 +46,24 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 exports.__esModule = true;
-exports.existPlayerWithId = exports.deletePlayerById = exports.updatePlayer = exports.addPlayer = exports.getPlayerByPosition = exports.getPlayerBySurname = exports.getPlayerByName = exports.getPlayerById = exports.getParents = exports.getPlayers = void 0;
+exports.existPlayerWithId = exports.deletePlayerById = exports.updatePlayer = exports.addPlayer = exports.getPlayerByPosition = exports.getPlayerBySurname = exports.getPlayerByName = exports.getPlayerById = exports.getParents = exports.getPlayersToCSV = exports.getPlayers = void 0;
 var pg_1 = require("pg");
 var dotenv_1 = __importDefault(require("dotenv"));
+var stringify = require("csv-stringify").stringify;
+var fs = require('fs');
 dotenv_1["default"].config({ path: require('find-config')('.env') });
 var pool = new pg_1.Pool({
     user: "postgres",
@@ -52,18 +74,43 @@ var pool = new pg_1.Pool({
 });
 function getPlayers() {
     return __awaiter(this, void 0, void 0, function () {
-        var statment;
+        var statment, rez;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     statment = '(SELECT array_to_json(array_agg(row_to_json(t))) as igrac FROM ( SELECT i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick as pick_na_draftu,i.draft_godina as godina_drafta,i.tim as naziv_kluba,COALESCE(json_agg(json_build_object(\'ime\', r.ime, \'prezime\', r.prezime)) , \'[]\') AS roditelji FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id GROUP BY i.id) t)';
                     return [4 /*yield*/, pool.query(statment)];
-                case 1: return [2 /*return*/, (_a.sent()).rows[0]];
+                case 1:
+                    rez = (_a.sent()).rows[0].igrac;
+                    return [2 /*return*/, getJSONLD(rez)];
             }
         });
     });
 }
 exports.getPlayers = getPlayers;
+function getPlayersToCSV() {
+    return __awaiter(this, void 0, void 0, function () {
+        var statment, json, replacer, header, csv;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    statment = '(SELECT i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick,i.draft_godina,i.tim,r.ime as ime_roditelja,r.prezime as prezime_roditelja FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id )';
+                    return [4 /*yield*/, pool.query(statment)];
+                case 1:
+                    json = (_a.sent()).rows;
+                    replacer = function (key, value) { return value === null ? '' : value; } // specify how you want to handle null values here
+                    ;
+                    header = Object.keys(json[0]);
+                    csv = __spreadArray([
+                        header.join(',')
+                    ], json.map(function (row) { return header.map(function (fieldName) { return JSON.stringify(row[fieldName], replacer); }).join(','); }), true).join('\r\n');
+                    fs.writeFileSync(__dirname + '/preslika_igraci.csv', csv);
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.getPlayersToCSV = getPlayersToCSV;
 function getParents() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -77,13 +124,15 @@ function getParents() {
 exports.getParents = getParents;
 function getPlayerById(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var statment;
+        var statment, rez;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     statment = '(SELECT array_to_json(array_agg(row_to_json(t))) as igrac FROM ( SELECT i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick as pick_na_draftu,i.draft_godina as godina_drafta,i.tim as naziv_kluba,COALESCE(json_agg(json_build_object(\'ime\', r.ime, \'prezime\', r.prezime)) , \'[]\') AS roditelji FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id WHERE i.id = $1 GROUP BY i.id) t)';
                     return [4 /*yield*/, pool.query(statment, [id])];
-                case 1: return [2 /*return*/, (_a.sent()).rows[0]];
+                case 1:
+                    rez = (_a.sent()).rows[0].igrac;
+                    return [2 /*return*/, getJSONLD(rez)];
             }
         });
     });
@@ -91,13 +140,15 @@ function getPlayerById(id) {
 exports.getPlayerById = getPlayerById;
 function getPlayerByName(name) {
     return __awaiter(this, void 0, void 0, function () {
-        var statment;
+        var statment, rez;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     statment = '(SELECT array_to_json(array_agg(row_to_json(t))) as igrac FROM ( SELECT i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick as pick_na_draftu,i.draft_godina as godina_drafta,i.tim as naziv_kluba,COALESCE(json_agg(json_build_object(\'ime\', r.ime, \'prezime\', r.prezime)) , \'[]\') AS roditelji FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id WHERE i.ime = $1 GROUP BY i.id) t)';
                     return [4 /*yield*/, pool.query(statment, [name])];
-                case 1: return [2 /*return*/, (_a.sent()).rows[0]];
+                case 1:
+                    rez = (_a.sent()).rows[0].igrac;
+                    return [2 /*return*/, getJSONLD(rez)];
             }
         });
     });
@@ -105,13 +156,15 @@ function getPlayerByName(name) {
 exports.getPlayerByName = getPlayerByName;
 function getPlayerBySurname(name) {
     return __awaiter(this, void 0, void 0, function () {
-        var statment;
+        var statment, rez;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     statment = '(SELECT array_to_json(array_agg(row_to_json(t))) as igrac FROM ( SELECT i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick as pick_na_draftu,i.draft_godina as godina_drafta,i.tim as naziv_kluba,COALESCE(json_agg(json_build_object(\'ime\', r.ime, \'prezime\', r.prezime)) , \'[]\') AS roditelji FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id WHERE i.prezime = $1 GROUP BY i.id) t)';
                     return [4 /*yield*/, pool.query(statment, [name])];
-                case 1: return [2 /*return*/, (_a.sent()).rows[0]];
+                case 1:
+                    rez = (_a.sent()).rows[0].igrac;
+                    return [2 /*return*/, getJSONLD(rez)];
             }
         });
     });
@@ -119,13 +172,15 @@ function getPlayerBySurname(name) {
 exports.getPlayerBySurname = getPlayerBySurname;
 function getPlayerByPosition(position) {
     return __awaiter(this, void 0, void 0, function () {
-        var statment;
+        var statment, rez;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     statment = '(SELECT array_to_json(array_agg(row_to_json(t))) as igrac FROM ( SELECT i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick as pick_na_draftu,i.draft_godina as godina_drafta,i.tim as naziv_kluba,COALESCE(json_agg(json_build_object(\'ime\', r.ime, \'prezime\', r.prezime)) , \'[]\') AS roditelji FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id WHERE i.pozicija = $1 GROUP BY i.id) t)';
                     return [4 /*yield*/, pool.query(statment, [position])];
-                case 1: return [2 /*return*/, (_a.sent()).rows[0]];
+                case 1:
+                    rez = (_a.sent()).rows[0].igrac;
+                    return [2 /*return*/, getJSONLD(rez)];
             }
         });
     });
@@ -133,13 +188,15 @@ function getPlayerByPosition(position) {
 exports.getPlayerByPosition = getPlayerByPosition;
 function getPlayerWithIdById(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var statment;
+        var statment, rez;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     statment = '(SELECT array_to_json(array_agg(row_to_json(t))) as igrac FROM ( SELECT i.id,i.ime,i.prezime,i.pozicija,i.placa,i.datum_rodenja,i.visina,i.tezina,i.draft_pick as pick_na_draftu,i.draft_godina as godina_drafta,i.tim as naziv_kluba,COALESCE(json_agg(json_build_object(\'ime\', r.ime, \'prezime\', r.prezime)) , \'[]\') AS roditelji FROM "Igrac" as i JOIN "Roditelj" as r ON i.id=r.d_id WHERE i.id = $1 GROUP BY i.id) t)';
                     return [4 /*yield*/, pool.query(statment, [id])];
-                case 1: return [2 /*return*/, (_a.sent()).rows[0]];
+                case 1:
+                    rez = (_a.sent()).rows[0].igrac;
+                    return [2 /*return*/, getJSONLD(rez)];
             }
         });
     });
@@ -254,3 +311,21 @@ function existPlayerWithId(id) {
     });
 }
 exports.existPlayerWithId = existPlayerWithId;
+function getJSONLD(rez) {
+    var json = {};
+    json["@vocab"] = "http://schema.org/";
+    json["ime"] = "givenName";
+    json["prezime"] = "familyname";
+    var jl = {};
+    jl["@context"] = json;
+    jl["@type"] = "Person";
+    var pov = [];
+    for (var i = 0; i < rez.length; i++) {
+        var data = rez[i];
+        var js = __assign(__assign({}, jl), data);
+        pov.push(js);
+    }
+    var jsonld = {};
+    jsonld["igrac"] = pov;
+    return jsonld;
+}
